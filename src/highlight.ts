@@ -28,8 +28,9 @@ function mountDummyElement(): Element {
 }
 
 export function highlight(step: DriveStep) {
-  const { element } = step;
+  const { element, elements } = step;
   let elemObj = typeof element === "string" ? document.querySelector(element) : element;
+  let highlightObjs = elements ? document.querySelectorAll(elements) : undefined;
 
   // If the element is not found, we mount a 1px div
   // at the center of the screen to highlight and show
@@ -39,24 +40,25 @@ export function highlight(step: DriveStep) {
     elemObj = mountDummyElement();
   }
 
-  transferHighlight(elemObj, step);
+  transferHighlight(elemObj, highlightObjs, step);
 }
 
 export function refreshActiveHighlight() {
   const activeHighlight = getState("__activeElement");
   const activeStep = getState("__activeStep")!;
+  const activeHighlighedElements = getState("activeHighlighedElements");
 
   if (!activeHighlight) {
     return;
   }
 
-  trackActiveElement(activeHighlight);
+  trackActiveElement(activeHighlight, activeHighlighedElements);
   refreshOverlay();
   repositionPopover(activeHighlight, activeStep);
 }
 
 
-function transferHighlight(toElement: Element, toStep: DriveStep) {
+function transferHighlight(toElement: Element, highlightObjs: NodeListOf<Element> | undefined, toStep: DriveStep) {
   const duration = 400;
   const start = Date.now();
 
@@ -101,6 +103,7 @@ function transferHighlight(toElement: Element, toStep: DriveStep) {
   setState("previousElement", fromElement);
   setState("activeStep", toStep);
   setState("activeElement", toElement);
+  setState("activeHighlighedElements", highlightObjs);
 
   const animate = () => {
     const transitionCallback = getState("__transitionCallback");
@@ -124,7 +127,7 @@ function transferHighlight(toElement: Element, toStep: DriveStep) {
     if (getConfig("animate") && elapsed < duration) {
       transitionStage(elapsed, duration, fromElement, toElement);
     } else {
-      trackActiveElement(toElement);
+      trackActiveElement(toElement, highlightObjs);
 
       if (highlightedHook) {
         highlightedHook(isToDummyElement ? undefined : toElement, toStep, {

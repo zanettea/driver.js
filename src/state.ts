@@ -7,6 +7,7 @@ export type State = {
 
   activeIndex?: number;
   activeElement?: Element;
+  activeHighlighedElements?: NodeListOf<Element>;
   activeStep?: DriveStep;
   previousElement?: Element;
   previousStep?: DriveStep;

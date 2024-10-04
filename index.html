@@ -167,6 +167,7 @@
       <div class="buttons">
         <button id="highlight-btn">Animated Highlight</button>
         <button id="simple-highlight-btn">Simple Highlight</button>
+        <button id="multi-highlight-btn">Multi Highlight</button>
         <button id="transition-highlight-btn">Transition Highlight</button>
         <button id="disallow-close">Disallow Close</button>
         <button id="click-overlay-to-next">Click Overlay to Next</button>
@@ -930,6 +931,20 @@ npm install driver.js</pre
       document.getElementById("simple-highlight-btn").addEventListener("click", () => {
         driver({ animate: false }).highlight({
           element: "#large-paragraph-text",
+          popover: {
+            title: "driver.js",
+            description:
+              "Highlight anything, anywhere on the page. Yes, literally anything including SVG portions, scrollable items etc.",
+            align: "start",
+            side: "top",
+          },
+        });
+      });
+
+      document.getElementById("multi-highlight-btn").addEventListener("click", () => {
+        driver({ animate: false }).highlight({
+          element: "#large-paragraph-text",
+          elements: "h2, #large-paragraph-text",
           popover: {
             title: "driver.js",
             description:

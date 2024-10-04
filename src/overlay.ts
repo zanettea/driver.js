@@ -31,12 +31,12 @@ export function transitionStage(elapsed: number, duration: number, from: Element
     height,
   };
 
-  renderOverlay(activeStagePosition);
+  renderOverlay([activeStagePosition]);
   setState("__activeStagePosition", activeStagePosition);
 }
 
-export function trackActiveElement(element: Element) {
-  if (!element) {
+export function trackActiveElement(element: Element, highlightObjs: NodeListOf<Element> | undefined) {
+  if (!element && !highlightObjs) {
     return;
   }
 
@@ -51,7 +51,21 @@ export function trackActiveElement(element: Element) {
 
   setState("__activeStagePosition", activeStagePosition);
 
-  renderOverlay(activeStagePosition);
+  if (!highlightObjs) {
+    renderOverlay([activeStagePosition]);
+  } else {
+    const highlightStagePositions = Array.from(highlightObjs).map(el => {
+      const definition = el.getBoundingClientRect();
+      return {
+        x: definition.x,
+        y: definition.y,
+        width: definition.width,
+        height: definition.height,
+      };
+    });
+
+    renderOverlay([...highlightStagePositions]);
+  }
 }
 
 export function refreshOverlay() {
@@ -73,7 +87,7 @@ export function refreshOverlay() {
   overlaySvg.setAttribute("viewBox", `0 0 ${windowX} ${windowY}`);
 }
 
-function mountOverlay(stagePosition: StageDefinition) {
+function mountOverlay(stagePosition: StageDefinition[]) {
   const overlaySvg = createOverlaySvg(stagePosition);
   document.body.appendChild(overlaySvg);
 
@@ -89,7 +103,7 @@ function mountOverlay(stagePosition: StageDefinition) {
   setState("__overlaySvg", overlaySvg);
 }
 
-function renderOverlay(stagePosition: StageDefinition) {
+function renderOverlay(stagePosition: StageDefinition[]) {
   const overlaySvg = getState("__overlaySvg");
 
   // TODO: cancel rendering if element is not visible
@@ -107,7 +121,7 @@ function renderOverlay(stagePosition: StageDefinition) {
   pathElement.setAttribute("d", generateStageSvgPathString(stagePosition));
 }
 
-function createOverlaySvg(stage: StageDefinition): SVGSVGElement {
+function createOverlaySvg(stage: StageDefinition[]): SVGSVGElement {
   const windowX = window.innerWidth;
   const windowY = window.innerHeight;
 
@@ -145,29 +159,35 @@ function createOverlaySvg(stage: StageDefinition): SVGSVGElement {
   return svg;
 }
 
-function generateStageSvgPathString(stage: StageDefinition) {
+function generateStageSvgPathString(stages: StageDefinition[]) {
   const windowX = window.innerWidth;
   const windowY = window.innerHeight;
 
-  const stagePadding = getConfig("stagePadding") || 0;
-  const stageRadius = getConfig("stageRadius") || 0;
+  let path = `M${windowX},0L0,0L0,${windowY}L${windowX},${windowY}L${windowX},0Z `
 
-  const stageWidth = stage.width + stagePadding * 2;
-  const stageHeight = stage.height + stagePadding * 2;
+  for(let stage of stages) {
 
-  // prevent glitches when stage is too small for radius
-  const limitedRadius = Math.min(stageRadius, stageWidth / 2, stageHeight / 2);
+    const stagePadding = getConfig("stagePadding") || 0;
+    const stageRadius = getConfig("stageRadius") || 0;
 
-  // no value below 0 allowed + round down
-  const normalizedRadius = Math.floor(Math.max(limitedRadius, 0));
+    const stageWidth = stage.width + stagePadding * 2;
+    const stageHeight = stage.height + stagePadding * 2;
 
-  const highlightBoxX = stage.x - stagePadding + normalizedRadius;
-  const highlightBoxY = stage.y - stagePadding;
-  const highlightBoxWidth = stageWidth - normalizedRadius * 2;
-  const highlightBoxHeight = stageHeight - normalizedRadius * 2;
+    // prevent glitches when stage is too small for radius
+    const limitedRadius = Math.min(stageRadius, stageWidth / 2, stageHeight / 2);
 
-  return `M${windowX},0L0,0L0,${windowY}L${windowX},${windowY}L${windowX},0Z
-    M${highlightBoxX},${highlightBoxY} h${highlightBoxWidth} a${normalizedRadius},${normalizedRadius} 0 0 1 ${normalizedRadius},${normalizedRadius} v${highlightBoxHeight} a${normalizedRadius},${normalizedRadius} 0 0 1 -${normalizedRadius},${normalizedRadius} h-${highlightBoxWidth} a${normalizedRadius},${normalizedRadius} 0 0 1 -${normalizedRadius},-${normalizedRadius} v-${highlightBoxHeight} a${normalizedRadius},${normalizedRadius} 0 0 1 ${normalizedRadius},-${normalizedRadius} z`;
+    // no value below 0 allowed + round down
+    const normalizedRadius = Math.floor(Math.max(limitedRadius, 0));
+
+    const highlightBoxX = stage.x - stagePadding + normalizedRadius;
+    const highlightBoxY = stage.y - stagePadding;
+    const highlightBoxWidth = stageWidth - normalizedRadius * 2;
+    const highlightBoxHeight = stageHeight - normalizedRadius * 2;
+
+    path += ` M${highlightBoxX},${highlightBoxY} h${highlightBoxWidth} a${normalizedRadius},${normalizedRadius} 0 0 1 ${normalizedRadius},${normalizedRadius} v${highlightBoxHeight} a${normalizedRadius},${normalizedRadius} 0 0 1 -${normalizedRadius},${normalizedRadius} h-${highlightBoxWidth} a${normalizedRadius},${normalizedRadius} 0 0 1 -${normalizedRadius},-${normalizedRadius} v-${highlightBoxHeight} a${normalizedRadius},${normalizedRadius} 0 0 1 ${normalizedRadius},-${normalizedRadius} z`;
+
+  }
+  return path;
 }
 
 export function destroyOverlay() {
