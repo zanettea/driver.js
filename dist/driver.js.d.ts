@@ -107,7 +107,7 @@ export type PopoverDOM = {
 declare function requireRefresh(): void;
 export type DriveStep = {
 	element?: string | Element;
-	elements?: string;
+	highlightElements?: string;
 	onHighlightStarted?: DriverHook;
 	onHighlighted?: DriverHook;
 	onDeselected?: DriverHook;

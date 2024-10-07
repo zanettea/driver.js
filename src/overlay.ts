@@ -3,6 +3,8 @@ import { onDriverClick } from "./events";
 import { emit } from "./emitter";
 import { getConfig } from "./config";
 import { getState, setState } from "./state";
+import { Rectangle, subdivide, unionPolygon, roundSvgPath } from "./utils";
+
 
 export type StageDefinition = {
   x: number;
@@ -165,29 +167,24 @@ function generateStageSvgPathString(stages: StageDefinition[]) {
 
   let path = `M${windowX},0L0,0L0,${windowY}L${windowX},${windowY}L${windowX},0Z `
 
-  for(let stage of stages) {
+  // convert into TL-BR notation and compute polygon string
+  const stagePadding = getConfig("stagePadding") || 0;
+  const stageRadius = getConfig("stageRadius") || 0;
+  const svgPath = unionPolygon(subdivide(stages.map( (s: StageDefinition) : Rectangle => {
+    return [[s.x - stagePadding, s.y - stagePadding], [s.x + s.width + stagePadding, s.y + s.height + stagePadding]];
+  }))).map(
+    poly => roundSvgPath(
+      // Non rounded path to be rounded
+      poly.map(
+        (point, i) => `${i === 0 ? 'M' : 'L'}${point.join(' ')}${i === poly.length - 1 ? 'z' : ''}`
+      ).join(
+        ' '
+      ),
+      stageRadius * 2
+    )
+  ).join(' ');
 
-    const stagePadding = getConfig("stagePadding") || 0;
-    const stageRadius = getConfig("stageRadius") || 0;
-
-    const stageWidth = stage.width + stagePadding * 2;
-    const stageHeight = stage.height + stagePadding * 2;
-
-    // prevent glitches when stage is too small for radius
-    const limitedRadius = Math.min(stageRadius, stageWidth / 2, stageHeight / 2);
-
-    // no value below 0 allowed + round down
-    const normalizedRadius = Math.floor(Math.max(limitedRadius, 0));
-
-    const highlightBoxX = stage.x - stagePadding + normalizedRadius;
-    const highlightBoxY = stage.y - stagePadding;
-    const highlightBoxWidth = stageWidth - normalizedRadius * 2;
-    const highlightBoxHeight = stageHeight - normalizedRadius * 2;
-
-    path += ` M${highlightBoxX},${highlightBoxY} h${highlightBoxWidth} a${normalizedRadius},${normalizedRadius} 0 0 1 ${normalizedRadius},${normalizedRadius} v${highlightBoxHeight} a${normalizedRadius},${normalizedRadius} 0 0 1 -${normalizedRadius},${normalizedRadius} h-${highlightBoxWidth} a${normalizedRadius},${normalizedRadius} 0 0 1 -${normalizedRadius},-${normalizedRadius} v-${highlightBoxHeight} a${normalizedRadius},${normalizedRadius} 0 0 1 ${normalizedRadius},-${normalizedRadius} z`;
-
-  }
-  return path;
+  return path + " " + svgPath;
 }
 
 export function destroyOverlay() {
