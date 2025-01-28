@@ -29,8 +29,8 @@ function mountDummyElement(): Element {
 
 export function highlight(step: DriveStep) {
   const { element, highlightElements } = step;
-  let elemObj = typeof element === "string" ? document.querySelector(element) : element;
-  let highlightObjs = highlightElements ? document.querySelectorAll(highlightElements) : undefined;
+  let elemObj = typeof element === "string" ? document.querySelector(element) : typeof element === "function" ? element() : element;
+  let highlightObjs = highlightElements ? ( typeof highlightElements === "string" ? document.querySelectorAll(highlightElements) : typeof highlightElements === "function" ? highlightElements() : undefined ) : undefined;
 
   // If the element is not found, we mount a 1px div
   // at the center of the screen to highlight and show

@@ -362,7 +362,7 @@ function me() {
 }
 function Y(t) {
   const { element: n, highlightElements: e } = t;
-  let o = typeof n == "string" ? document.querySelector(n) : n, a = e ? document.querySelectorAll(e) : void 0;
+  let o = typeof n == "string" ? document.querySelector(n) : typeof n == "function" ? n() : n, a = e ? typeof e == "string" ? document.querySelectorAll(e) : typeof e == "function" ? e() : void 0 : void 0;
   o || (o = me()), be(o, a, t);
 }
 function xe() {
